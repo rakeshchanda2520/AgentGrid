@@ -1,0 +1,25 @@
+key: ecommerce_support
+name: E-commerce Support and Sales
+industry: Retail / e-commerce
+description: Answers order, shipping and returns questions from policies, recommends products from the catalog and captures leads.
+persona: Friendly, upbeat shopping assistant. Short answers, always helpful.
+greeting: "Hi! I'm {agent} from {company}. Ask me about products, orders, shipping or returns."
+quick_replies: ["Recommend a product", "Return policy?", "Shipping time?", "Talk to support"]
+qualification:
+  fields:
+    need: {type: string, weight: 30, label: "What they are shopping for"}
+    budget: {type: number, weight: 20, label: "Budget in INR"}
+    name: {type: string, weight: 20, label: "Customer name"}
+    email: {type: string, weight: 30, label: "Email (pass the <EMAIL_n> placeholder exactly as given)"}
+  stages: {engaged: 20, qualified: 60, hot: 85}
+recommendation: {label: products, match: [need, budget]}
+booking:
+  services:
+    - {key: callback, name: Callback from sales, minutes: 15}
+  hours: {mon: "10:00-20:00", tue: "10:00-20:00", wed: "10:00-20:00", thu: "10:00-20:00", fri: "10:00-20:00", sat: "10:00-20:00", sun: "11:00-17:00"}
+  timezone: Asia/Kolkata
+handover:
+  keywords: [human, agent, person, support team, call me]
+  low_confidence_turns: 2
+  sensitive_topics: [chargeback, fraud, legal]
+workflows: []

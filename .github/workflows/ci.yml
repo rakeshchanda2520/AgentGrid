@@ -1,0 +1,47 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Non-superuser test role (superusers bypass row-level security)
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "create role agentgrid login password 'agentgrid' nosuperuser nobypassrls"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "create database agentgrid_test owner agentgrid"
+          PGPASSWORD=postgres psql -h localhost -U postgres -d agentgrid_test -c "create extension vector"
+      - run: uv sync
+      - run: uv run ruff check . && uv run ruff format --check .
+      - run: uv run pytest -q
+        env:
+          TEST_DATABASE_URL: postgresql://agentgrid:agentgrid@localhost:5432/agentgrid_test
+          JWT_SECRET: ci-only
+          MASTER_KEY: ci-only
+
+  console:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: console } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: console/package-lock.json }
+      - run: npm ci
+      - run: npm run build

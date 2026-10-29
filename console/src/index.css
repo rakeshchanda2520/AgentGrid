@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+/* Brand tokens (Warm Luxury, shared with earlier projects). Components use these names only.
+   --primary / --accent are overridden at runtime by the tenant's white-label branding. */
+:root {
+  --paper: #f3ebdd;
+  --surface: #fbf7f0;
+  --sunk: #ede3d1;
+  --ink: #172554;
+  --muted: #4a5578;
+  --line: #e2d6c1;
+  --primary: #172554;
+  --primary-ink: #ffffff;
+  --accent: #c19a5b; /* decoration only: ~2.2:1 on cream */
+  --accent-ink: #8a6a2f; /* gold for text, AA on cream */
+  --ok: #2f6b4f;
+  --ok-bg: #e3f0e8;
+  --warn: #8a5a00;
+  --warn-bg: #f7eccf;
+  --bad: #9b2c2c;
+  --bad-bg: #f6e3df;
+  --info: #1e40af;
+  --info-bg: #e3e8f7;
+  --shadow: 0 1px 2px rgb(23 37 84 / 0.06), 0 8px 24px rgb(23 37 84 / 0.06);
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunk: var(--sunk);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --shadow-soft: var(--shadow);
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Fraunces", Georgia, serif;
+  --radius-card: 16px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum";
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: default;
+  }
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.25s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+}

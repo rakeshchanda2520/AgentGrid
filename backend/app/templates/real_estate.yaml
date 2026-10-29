@@ -1,0 +1,65 @@
+key: real_estate
+name: Real Estate Lead Qualifier
+industry: Real estate
+description: Answers project questions from brochures, qualifies buyers, recommends matching listings and books site visits.
+persona: Warm, concise property advisor. Never pushy. Replies in the customer's language (English, Hindi or Hinglish).
+greeting: "Hi! I'm {agent} from {company}. Looking to buy, rent or invest? I can share projects, prices and book a site visit."
+quick_replies: ["Show me 3BHK options", "What are the prices?", "Book a site visit", "Talk to an agent"]
+qualification:
+  fields:
+    intent: {type: enum, values: [buy, rent, invest], weight: 10, label: "Buy, rent or invest"}
+    location: {type: string, weight: 15, label: "Preferred area"}
+    budget: {type: number, weight: 20, label: "Budget in INR as a plain number (1.2 crore = 12000000)"}
+    property_type: {type: enum, values: [apartment, villa, plot, commercial], weight: 10, label: "Property type"}
+    bedrooms: {type: integer, weight: 5, label: "Bedrooms (BHK)"}
+    timeline_months: {type: integer, weight: 15, score: "<=3:15,<=6:10,else:4", label: "Months until purchase or move"}
+    financing: {type: enum, values: [cash, loan, loan_preapproved], weight: 10, score: "loan_preapproved:10,cash:10,loan:6", label: "How they will pay"}
+    name: {type: string, weight: 7, label: "Customer name"}
+    phone: {type: string, weight: 8, label: "Phone number (pass the <PHONE_n> placeholder exactly as given)"}
+  stages: {engaged: 20, qualified: 60, hot: 80}
+recommendation:
+  label: properties
+  match: [location, budget, property_type, bedrooms]
+booking:
+  services:
+    - {key: site_visit, name: Site visit, minutes: 60}
+  hours: {mon: "10:00-19:00", tue: "10:00-19:00", wed: "10:00-19:00", thu: "10:00-19:00", fri: "10:00-19:00", sat: "10:00-17:00", sun: ""}
+  timezone: Asia/Kolkata
+handover:
+  keywords: [human, agent, person, representative, manager, call me, real person, talk to someone]
+  low_confidence_turns: 2
+  sensitive_topics: [legal dispute, lawsuit, refund of booking amount, cancellation of booking]
+workflows:
+  - name: Hot lead to CRM + sales alert
+    trigger: {event: lead.qualified, filter: [{field: lead.score, op: ">=", value: 60}]}
+    steps:
+      - {id: crm, action: crm.upsert_contact}
+      - id: email_sales
+        action: notify.email
+        params:
+          to: "{{ tenant.sales_email }}"
+          subject: "New qualified lead: {{ lead.fields.name or 'Unknown' }} ({{ lead.score }})"
+          body: |
+            Lead {{ lead.fields.name or '' }} scored {{ lead.score }} ({{ lead.stage }}).
+            Area: {{ lead.fields.location or '-' }} | Budget: {{ lead.fields.budget or '-' }} | Timeline: {{ lead.fields.timeline_months or '-' }} months
+            Open the AgentGrid inbox for the full conversation.
+      - {id: slack, action: notify.slack, params: {text: "New qualified lead {{ lead.fields.name or '' }}: score {{ lead.score }}, {{ lead.fields.location or 'any area' }}"}}
+      - {id: wait, action: delay, params: {minutes: 30}}
+      - {id: check, action: condition, params: {if: [{field: lead.stage, op: "!=", value: booked}]}}
+      - {id: nudge, action: channel.send_message, params: {text: "Hi {{ lead.fields.name or 'there' }}, would you like me to book a site visit this week? Just reply with a day that suits you."}}
+  - name: Site visit confirmation
+    trigger: {event: appointment.booked}
+    steps:
+      - id: confirm
+        action: notify.email
+        params:
+          to: "{{ contact.email or tenant.sales_email }}"
+          subject: "Site visit confirmed: {{ appointment.when }}"
+          body: |
+            Hi {{ appointment.customer_name or 'there' }},
+
+            Your {{ appointment.service }} with {{ tenant.name }} is confirmed for {{ appointment.when }}.
+
+            See you soon!
+          attach_ics: true
+      - {id: tag, action: conversation.tag, params: {tag: site-visit-booked}}

@@ -1,0 +1,46 @@
+[project]
+name = "agentgrid"
+version = "0.1.0"
+description = "AgentGrid: multi-tenant AI agents for customer engagement and business automation"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "asyncpg",
+    "pydantic-settings",
+    "pyjwt",
+    "argon2-cffi",
+    "cryptography",
+    "httpx",
+    "python-multipart",
+    "jinja2",
+    "pyyaml",
+    "pypdf",
+    "python-docx",
+    "langchain",
+    "langchain-core",
+    "langgraph",
+    "langchain-openai",
+    "langchain-anthropic",
+    "langchain-text-splitters",
+    "fastembed",
+    "prometheus-client",
+    "tzdata>=2026.6",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-asyncio", "ruff", "pgserver"]
+
+[tool.ruff]
+line-length = 160
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["S101", "S608", "B008", "S311", "E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]

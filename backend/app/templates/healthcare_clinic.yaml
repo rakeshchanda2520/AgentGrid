@@ -1,0 +1,55 @@
+key: healthcare_clinic
+name: Healthcare Clinic Assistant
+industry: Healthcare
+description: Answers treatment and pricing questions, recommends treatment packages, books appointments and escalates medical questions to staff.
+persona: Calm, caring clinic receptionist. Gives general information only, never a diagnosis or medical advice. Replies in the customer's language.
+greeting: "Hello! I'm {agent} from {company}. I can answer questions about treatments and prices, or book an appointment for you."
+quick_replies: ["Book a check-up", "Teeth whitening price?", "Do you offer braces?", "Talk to the clinic"]
+qualification:
+  fields:
+    concern: {type: string, weight: 25, label: "What they need (check-up, cleaning, whitening, braces, implant, pain...)"}
+    new_patient: {type: boolean, weight: 10, label: "First visit to the clinic?"}
+    preferred_date: {type: string, weight: 15, label: "Preferred day or time"}
+    name: {type: string, weight: 20, label: "Patient name"}
+    phone: {type: string, weight: 20, label: "Phone number (pass the <PHONE_n> placeholder exactly as given)"}
+    email: {type: string, weight: 10, label: "Email (pass the <EMAIL_n> placeholder exactly as given)"}
+  stages: {engaged: 20, qualified: 55, hot: 80}
+recommendation:
+  label: treatment packages
+  match: [concern, budget]
+booking:
+  services:
+    - {key: consultation, name: Consultation, minutes: 30}
+    - {key: cleaning, name: Cleaning and polishing, minutes: 45}
+  hours: {mon: "09:00-18:00", tue: "09:00-18:00", wed: "09:00-18:00", thu: "09:00-18:00", fri: "09:00-18:00", sat: "09:00-14:00", sun: ""}
+  timezone: Asia/Kolkata
+handover:
+  keywords: [human, doctor, dentist, staff, person, receptionist, call me, talk to someone]
+  low_confidence_turns: 2
+  sensitive_topics: [emergency, bleeding, swelling, severe pain, medication, dosage, prescription, pregnant, allergic reaction]
+workflows:
+  - name: Appointment confirmation + reminder
+    trigger: {event: appointment.booked}
+    steps:
+      - id: confirm
+        action: notify.email
+        params:
+          to: "{{ contact.email or tenant.sales_email }}"
+          subject: "Appointment confirmed: {{ appointment.when }}"
+          body: |
+            Hi {{ appointment.customer_name or 'there' }},
+
+            Your {{ appointment.service }} at {{ tenant.name }} is confirmed for {{ appointment.when }}.
+            Please arrive 10 minutes early.
+          attach_ics: true
+      - {id: reminder_wait, action: delay, params: {until: "{{ appointment.reminder_at }}"}}
+      - {id: reminder, action: channel.send_message, params: {text: "Reminder: your {{ appointment.service }} at {{ tenant.name }} is on {{ appointment.when }}. Reply here if you need to reschedule."}}
+  - name: Escalation alert
+    trigger: {event: conversation.escalated}
+    steps:
+      - id: email_staff
+        action: notify.email
+        params:
+          to: "{{ tenant.sales_email }}"
+          subject: "Patient needs a person: {{ event.reason }}"
+          body: "A conversation was escalated ({{ event.reason }}). Open the AgentGrid inbox to reply."
